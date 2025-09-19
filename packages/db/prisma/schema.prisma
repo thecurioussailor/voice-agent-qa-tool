@@ -13,12 +13,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  sessions  Session[]
+  createdAt DateTime @default(now())
+}
+
 model Session {
-  id           String   @id @default(uuid())
-  transcript   String
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  title        String     // Custom session title or short summary
+
   prompt       String
+  persona      String     // Custom persona for the session
+
   userInput    String
   aiResponse   String
-  latencyMs    Int
+  latencyMs    Int      //stores backend eval time in milliseconds
+  messages     Message[]
+  metrics      Metric[]
+  createdAt    DateTime @default(now())
+}
+
+model Message {
+  id         String     @id @default(cuid())
+  session    Session    @relation(fields: [sessionId], references: [id])
+  sessionId  String
+  sender     SenderType // 'AI' | 'USER'
+  content    String
+  timestamp  DateTime   @default(now())
+  createdAt  DateTime   @default(now())
+}
+
+enum SenderType {
+  AI
+  USER
+}
+
+model Metric {
+  id           String   @id @default(cuid())
+  session      Session  @relation(fields: [sessionId], references: [id])
+  sessionId    String
+  name         String   // e.g. "Politeness", "Accuracy", "Hallucination"
+  value        Float    // 0-1 or 0-100 score
+  feedback     String   // Optional textual explanation
   createdAt    DateTime @default(now())
 }
